@@ -247,6 +247,9 @@ class FlutterCallkeep extends EventManager {
       await _channel.invokeMethod<void>(
           'setOnHold', <String, dynamic>{'uuid': uuid, 'hold': shouldHold});
 
+  Future<void> reportCallIfNeeded(String callId, String caller) async => 
+    await _channel.invokeMethod('reportCallIfNeeded', <String, dynamic>{'callId': callId, 'caller': caller}); 
+    
   Future<void> setReachable() async {
     if (isIOS) {
       return;
