@@ -147,8 +147,8 @@ static CXProvider* sharedProvider;
         [self reportUpdatedCall:argsMap[@"uuid"] contactIdentifier:argsMap[@"localizedCallerName"]];
         result(nil);
     }else if([@"reportCallIfNeeded" isEqualToString:method]) {
-        [self reportCallIfNeeded:argsMap[@"callId"] callerName:argsMap[@"caller"] withCompletionHandler:nil];
-        result(nil);
+        NSString *uuid = [self reportCallIfNeeded:argsMap[@"callId"] callerName:argsMap[@"caller"] withCompletionHandler:nil];
+        result(@([uuid]));
     }
     else {
         return NO;
@@ -232,7 +232,7 @@ static CXProvider* sharedProvider;
     return [uuidStr lowercaseString];
 }
 
-- (BOOL)reportCallIfNeeded:(NSString *)callId callerName: (NSString *)callerName withCompletionHandler:(void (^)(void))completion {
+- (NSString *)reportCallIfNeeded:(NSString *)callId callerName: (NSString *)callerName withCompletionHandler:(void (^)(void))completion {
     // create uuid if need
     NSString *uuid = [callMap objectForKey:callId];
     if (uuid == nil) {
@@ -259,9 +259,9 @@ static CXProvider* sharedProvider;
             @"uuid": uuid,
         }
                   withCompletionHandler:completion];
-        return true;
+        return uuid;
     }
-    return false;
+    return uuid;
 }
 
 
