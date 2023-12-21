@@ -148,7 +148,7 @@ static CXProvider* sharedProvider;
         result(nil);
     }else if([@"reportCallIfNeeded" isEqualToString:method]) {
         NSString *uuid = [self reportCallIfNeeded:argsMap[@"callId"] callerName:argsMap[@"caller"] withCompletionHandler:nil];
-        result(@([uuid]));
+        result(uuid);
     }
     else {
         return NO;
