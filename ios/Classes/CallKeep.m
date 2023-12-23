@@ -287,9 +287,7 @@ static CXProvider* sharedProvider;
         return;
     }
     
-    if (![self reportCallIfNeeded:callId callerName:callerName withCompletionHandler:completion]) {
-        completion();
-    }
+    [self reportCallIfNeeded:callId callerName:callerName withCompletionHandler:completion];
     
     NSMutableDictionary *parseData = [NSMutableDictionary new];
     [parseData setValue:callId forKey:@"callId"];
