@@ -54,8 +54,6 @@ static CXProvider* sharedProvider;
 #endif
     if (self = [super init]) {
         _delayedEvents = [NSMutableArray array];
-        callObs = [[CXCallObserver alloc] init];
-        callMap = [[NSMutableDictionary alloc] init];
     }
     return self;
 }
@@ -201,6 +199,8 @@ static CXProvider* sharedProvider;
     self.callKeepProvider = sharedProvider;
     [self.callKeepProvider setDelegate:self queue:nil];
     [self voipRegistration];
+    callObs = [[CXCallObserver alloc] init];
+    callMap = [[NSMutableDictionary alloc] init];
 }
 
 #pragma mark - PushKit
