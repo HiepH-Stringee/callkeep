@@ -16,6 +16,11 @@
 @property (nonatomic, strong, nullable) CXCallController *callKeepCallController;
 @property (nonatomic, strong, nullable) CXProvider *callKeepProvider;
 @property (nonatomic, strong, nullable) FlutterMethodChannel* eventChannel;
++ (CallKeep *_Nullable)instance;
+@property (nonatomic, strong, nullable) NSMutableDictionary <NSString *, NSString *> *callMap;
+
+
+
 
 - (BOOL)handleMethodCall:(FlutterMethodCall* _Nonnull)call result:(FlutterResult _Nonnull )result;
 

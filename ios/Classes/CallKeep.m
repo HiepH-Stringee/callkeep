@@ -31,8 +31,6 @@ static NSString *const CallKeepPushKitReceivedNotification = @"CallKeepPushKitRe
     NSOperatingSystemVersion _version;
     bool _hasListeners;
     NSMutableArray *_delayedEvents;
-    CXCallObserver *callObs;
-    NSMutableDictionary <NSString *, NSString *> *callMap;
 }
 
 - (FlutterMethodChannel *)eventChannel
@@ -52,10 +50,21 @@ static CXProvider* sharedProvider;
 #ifdef DEBUG
     NSLog(@"[CallKeep][init]");
 #endif
+    NSLog(@"[CallKeep][init]");
     if (self = [super init]) {
         _delayedEvents = [NSMutableArray array];
+        _callMap = [[NSMutableDictionary alloc] init];
     }
     return self;
+}
+
++ (CallKeep *)instance {
+    static CallKeep *ins = nil;
+    static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            ins = [[CallKeep alloc] init];
+        });
+    return ins;
 }
 
 + (id)allocWithZone:(NSZone *)zone {
@@ -63,6 +72,7 @@ static CXProvider* sharedProvider;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [super allocWithZone:zone];
+        
     });
     return sharedInstance;
 }
@@ -195,12 +205,9 @@ static CXProvider* sharedProvider;
     [[NSUserDefaults standardUserDefaults] synchronize];
     
     [CallKeep initCallKitProvider];
-    
     self.callKeepProvider = sharedProvider;
     [self.callKeepProvider setDelegate:self queue:nil];
     [self voipRegistration];
-    callObs = [[CXCallObserver alloc] init];
-    callMap = [[NSMutableDictionary alloc] init];
 }
 
 #pragma mark - PushKit
@@ -234,10 +241,12 @@ static CXProvider* sharedProvider;
 
 - (NSString *)reportCallIfNeeded:(NSString *)callId callerName: (NSString *)callerName withCompletionHandler:(void (^)(void))completion {
     // create uuid if need
-    NSString *uuid = [callMap objectForKey:callId];
+    CXCallObserver *callObs = [[CXCallObserver alloc] init];
+    NSString *uuid = [CallKeep.instance.callMap objectForKey:callId];
     if (uuid == nil) {
         uuid = [self createUUID];
-        [callMap setObject:uuid forKey:callId];
+        NSLog(@"create new uuid for call: %@ %@", callId, uuid);
+        [CallKeep.instance.callMap setObject:uuid forKey:callId];
     }
     
     BOOL didShow = false;
@@ -287,13 +296,13 @@ static CXProvider* sharedProvider;
         return;
     }
     
-    [self reportCallIfNeeded:callId callerName:callerName withCompletionHandler:completion];
+    NSString *uuid = [self reportCallIfNeeded:callId callerName:callerName withCompletionHandler:completion];
     
     NSMutableDictionary *parseData = [NSMutableDictionary new];
     [parseData setValue:callId forKey:@"callId"];
     [parseData setValue:@(serial) forKey:@"serial"];
     [parseData setValue:callStatus forKey:@"callStatus"];
-    [parseData setValue:callMap[callId] forKey:@"uuid"];
+    [parseData setValue: uuid forKey:@"uuid"];
 
     // Ban them su kien khi nhan duoc push
     [self sendEventWithNameWrapper:CallKeepPushKitReceivedNotification body:parseData];
