@@ -54,6 +54,7 @@ static CXProvider* sharedProvider;
     if (self = [super init]) {
         _delayedEvents = [NSMutableArray array];
         _callMap = [[NSMutableDictionary alloc] init];
+        [self voipRegistration];
     }
     return self;
 }
@@ -72,7 +73,6 @@ static CXProvider* sharedProvider;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [super allocWithZone:zone];
-        
     });
     return sharedInstance;
 }
@@ -194,9 +194,6 @@ static CXProvider* sharedProvider;
 
 -(void)setup:(NSDictionary *)options
 {
-#ifdef DEBUG
-    NSLog(@"[CallKeep][setup] options = %@", options);
-#endif
     _version = [[[NSProcessInfo alloc] init] operatingSystemVersion];
     self.callKeepCallController = [[CXCallController alloc] init];
     NSDictionary *settings = [[NSMutableDictionary alloc] initWithDictionary:options];
@@ -208,6 +205,7 @@ static CXProvider* sharedProvider;
     self.callKeepProvider = sharedProvider;
     [self.callKeepProvider setDelegate:self queue:nil];
     [self voipRegistration];
+    NSLog(@"[CallKeep][setup] options = %@", options);
 }
 
 #pragma mark - PushKit
@@ -217,6 +215,7 @@ static CXProvider* sharedProvider;
     PKPushRegistry* voipRegistry = [[PKPushRegistry alloc] initWithQueue:dispatch_get_main_queue()];
     voipRegistry.delegate = self;
     voipRegistry.desiredPushTypes = [NSSet setWithObject:PKPushTypeVoIP];
+    NSLog(@"[CallKeep][voipRegistration]");
 }
 
 - (void)pushRegistry:(PKPushRegistry *)registry didUpdatePushCredentials:(PKPushCredentials *)pushCredentials forType:(PKPushType)type {
@@ -232,11 +231,7 @@ static CXProvider* sharedProvider;
 }
 
 - (NSString *)createUUID {
-    CFUUIDRef uuidObject = CFUUIDCreate(kCFAllocatorDefault);
-    NSString *uuidStr = (NSString *)CFBridgingRelease(CFUUIDCreateString(kCFAllocatorDefault, uuidObject));
-    CFUUIDBytes bytes = CFUUIDGetUUIDBytes(uuidObject);
-    CFRelease(uuidObject);
-    return [uuidStr lowercaseString];
+    return [NSUUID.UUID.UUIDString lowercaseString];
 }
 
 - (NSString *)reportCallIfNeeded:(NSString *)callId callerName: (NSString *)callerName withCompletionHandler:(void (^)(void))completion {
@@ -245,10 +240,10 @@ static CXProvider* sharedProvider;
     NSString *uuid = [CallKeep.instance.callMap objectForKey:callId];
     if (uuid == nil) {
         uuid = [self createUUID];
-        NSLog(@"create new uuid for call: %@ %@", callId, uuid);
         [CallKeep.instance.callMap setObject:uuid forKey:callId];
     }
     
+    NSLog(@"Uuid for call: %@ %@", callId, uuid);
     BOOL didShow = false;
     for (CXCall *call in callObs.calls) {
         if ([call.UUID.UUIDString.lowercaseString isEqual:uuid]) {
@@ -257,6 +252,7 @@ static CXProvider* sharedProvider;
     }
     
     if (!didShow) {
+        NSLog(@"display call for callID: %@", callId);
         [CallKeep reportNewIncomingCall:uuid
                                  handle:@"hiepit127@gmail.com"
                              handleType:@"generic"
