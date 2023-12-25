@@ -54,7 +54,9 @@ static CXProvider* sharedProvider;
     if (self = [super init]) {
         _delayedEvents = [NSMutableArray array];
         _callMap = [[NSMutableDictionary alloc] init];
-        [self voipRegistration];
+        _callAnswered = [[NSMutableArray alloc] init];
+        _callEnded = [[NSMutableArray alloc] init];
+        [self setup:@{@"appName" : @"HiepH"}];
     }
     return self;
 }
@@ -108,6 +110,7 @@ static CXProvider* sharedProvider;
         result(@([self isCallActive:argsMap[@"uuid"]]));
     }
     else if ([@"answerIncomingCall" isEqualToString:method]) {
+        NSLog(@"answer call from flutter: %@", argsMap[@"uuid"]);
         [self answerCall:argsMap[@"uuid"]];
         result(nil);
     }
@@ -157,6 +160,10 @@ static CXProvider* sharedProvider;
     }else if([@"reportCallIfNeeded" isEqualToString:method]) {
         NSString *uuid = [self reportCallIfNeeded:argsMap[@"callId"] callerName:argsMap[@"caller"] withCompletionHandler:nil];
         result(uuid);
+    }else if ([@"checkCallAnswered" isEqualToString:method]) {
+        result(@([self checkCallAnswered:argsMap[@"uuid"]]));
+    }else if ([@"checkCallEnded" isEqualToString: method]) {
+        result(@([self checkCallEnded:argsMap[@"uuid"]]));
     }
     else {
         return NO;
@@ -234,6 +241,15 @@ static CXProvider* sharedProvider;
     return [NSUUID.UUID.UUIDString lowercaseString];
 }
 
+- (BOOL)checkCallAnswered:(NSString *)uuid {
+    return [CallKeep.instance.callAnswered containsObject:uuid];
+}
+
+- (BOOL)checkCallEnded:(NSString *)uuid {
+    return [CallKeep.instance.callEnded containsObject:uuid];
+}
+ 
+
 - (NSString *)reportCallIfNeeded:(NSString *)callId callerName: (NSString *)callerName withCompletionHandler:(void (^)(void))completion {
     // create uuid if need
     CXCallObserver *callObs = [[CXCallObserver alloc] init];
@@ -244,9 +260,16 @@ static CXProvider* sharedProvider;
     }
     
     NSLog(@"Uuid for call: %@ %@", callId, uuid);
+    
     BOOL didShow = false;
     for (CXCall *call in callObs.calls) {
         if ([call.UUID.UUIDString.lowercaseString isEqual:uuid]) {
+            didShow = true;
+        }
+    }
+    
+    for (NSString *callUUID in CallKeep.instance.callEnded) {
+        if ([uuid isEqualToString:callUUID]) {
             didShow = true;
         }
     }
@@ -833,6 +856,7 @@ continueUserActivity:(NSUserActivity *)userActivity
 #endif
     [self configureAudioSession];
     [self sendEventWithNameWrapper:CallKeepPerformAnswerCallAction body:@{ @"callUUID": [action.callUUID.UUIDString lowercaseString] }];
+    [CallKeep.instance.callAnswered addObject:action.callUUID.UUIDString.lowercaseString];
     [action fulfill];
 }
 
@@ -843,6 +867,7 @@ continueUserActivity:(NSUserActivity *)userActivity
     NSLog(@"[CallKeep][CXProviderDelegate][provider:performEndCallAction]");
 #endif
     [self sendEventWithNameWrapper:CallKeepPerformEndCallAction body:@{ @"callUUID": [action.callUUID.UUIDString lowercaseString] }];
+    [CallKeep.instance.callEnded addObject:action.callUUID.UUIDString.lowercaseString];
     [action fulfill];
 }
 

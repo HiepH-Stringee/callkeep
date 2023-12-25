@@ -18,6 +18,8 @@
 @property (nonatomic, strong, nullable) FlutterMethodChannel* eventChannel;
 + (CallKeep *_Nullable)instance;
 @property (nonatomic, strong, nullable) NSMutableDictionary <NSString *, NSString *> *callMap;
+@property (nonatomic, strong, nullable) NSMutableArray<NSString *> *callAnswered;
+@property (nonatomic, strong, nullable) NSMutableArray<NSString *> *callEnded;
 
 
 
