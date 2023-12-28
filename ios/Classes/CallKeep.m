@@ -56,11 +56,12 @@ static CXProvider* sharedProvider;
         _callMap = [[NSMutableDictionary alloc] init];
         _callAnswered = [[NSMutableArray alloc] init];
         _callEnded = [[NSMutableArray alloc] init];
+        // có thể sửa lại value "HiepH"
         [self setup:@{@"appName" : @"HiepH"}];
     }
     return self;
 }
-
+// Gọi hàm này ngay từ khi app lanch để lắng nghe các sự kiện từ server push và callkeep
 + (CallKeep *)instance {
     static CallKeep *ins = nil;
     static dispatch_once_t onceToken;
@@ -249,6 +250,8 @@ static CXProvider* sharedProvider;
     return [CallKeep.instance.callEnded containsObject:uuid];
 }
  
+// client có thể nhận call từ sdk ( socket ) hoặc từ voipPush Service, trong trường hợp app tắt người dùng sẽ chỉ nhận call từ pushService nếu khi app được lanch mà lại tiếp tục gọi displayCall thì sẽ cuộc gọi này sẽ bị hiển thị 2 lần
+// Hàm này sẽ giúp việc chặn gọi hàm showCallKeep lần thứ 2.
 
 - (NSString *)reportCallIfNeeded:(NSString *)callId callerName: (NSString *)callerName withCompletionHandler:(void (^)(void))completion {
     // create uuid if need
@@ -258,9 +261,7 @@ static CXProvider* sharedProvider;
         uuid = [self createUUID];
         [CallKeep.instance.callMap setObject:uuid forKey:callId];
     }
-    
-    NSLog(@"Uuid for call: %@ %@", callId, uuid);
-    
+        
     BOOL didShow = false;
     for (CXCall *call in callObs.calls) {
         if ([call.UUID.UUIDString.lowercaseString isEqual:uuid]) {
@@ -273,9 +274,8 @@ static CXProvider* sharedProvider;
             didShow = true;
         }
     }
-    
+    // Có thể sửa thông tin handle thành tên app hoặc user-id của người nhận. cái này sẽ có tác dụng nếu implement tính năng gọi lại từ màn lịch sử cuộc gọi của máy.
     if (!didShow) {
-        NSLog(@"display call for callID: %@", callId);
         [CallKeep reportNewIncomingCall:uuid
                                  handle:@"hiepit127@gmail.com"
                              handleType:@"generic"
